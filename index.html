@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Waselha Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background: #050814; color: #fff; min-height: 100vh; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 800px; width: 100%; text-align: center; }
+        h1 { margin: 40px 0; color: #00c6ff; }
+        
+        /* Grid System */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .product-card { background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; }
+        .product-card:hover { transform: translateY(-5px); border-color: #00c6ff; }
+        .product-card img { width: 100%; border-radius: 10px; }
+        .price { color: #00c6ff; font-size: 1.2em; font-weight: bold; margin: 10px 0; }
+        .buy-btn { display: block; padding: 10px; background: #0066ff; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WASELHA STORE</h1>
+        <div id="products-grid" class="products-grid"></div>
+    </div>
+
+    <!-- استدعاء ملف لوحة التحكم (المنتجات) -->
+    <script src="products.js"></script>
+    <script>
+        const grid = document.getElementById('products-grid');
+        // عرض المنتجات من الملف
+        products.forEach(p => {
+            grid.innerHTML += `
+                <div class="product-card">
+                    <img src="${p.image}" alt="${p.name}">
+                    <h3>${p.name}</h3>
+                    <div class="price">${p.price}</div>
+                    <a href="${p.whatsapp}" class="buy-btn">اطلب الآن</a>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
