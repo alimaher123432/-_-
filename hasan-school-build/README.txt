@@ -1,0 +1,1 @@
+Temporary build files for the signed Hasan School Android release APK.
