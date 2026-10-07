@@ -1,0 +1,70 @@
+name: Build Hasan School Release
+
+on:
+  push:
+    branches:
+      - hasan-school-apk-build
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract school logo from platform
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re, base64, pathlib
+          p = pathlib.Path("app/src/main/assets/index.html")
+          s = p.read_text(encoding="utf-8")
+          m = re.search(r"const LOGO='data:image/jpeg;base64,([^']+)'", s)
+          if not m:
+              raise SystemExit("School logo was not found in platform HTML")
+          out = pathlib.Path("app/src/main/res/drawable")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "school_logo.jpg").write_bytes(base64.b64decode(m.group(1)))
+          print("logo bytes:", (out / "school_logo.jpg").stat().st_size)
+          PY
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build unsigned Release APK
+        run: gradle --no-daemon assembleRelease
+
+      - name: Verify release is not debug
+        shell: bash
+        run: |
+          test -f app/build/outputs/apk/release/app-release-unsigned.apk
+          ls -lh app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload unsigned Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HasanSchool-Unsigned-Release
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 7

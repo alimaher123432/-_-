@@ -1,7 +1,7 @@
 package iq.edu.hasanschool;
 
 import android.app.Activity;
-import android.print.PrintManager;
+import android.app.PrintManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WebView.setWebContentsDebuggingEnabled(false);
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.WHITE);
@@ -79,13 +80,16 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
-        s.setAllowFileAccess(true);
+        s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
         s.setMediaPlaybackRequiresUserGesture(true);
         s.setTextZoom(100);
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        }
 
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
@@ -114,7 +118,7 @@ public class MainActivity extends Activity {
                 if (APP_HOST.equals(uri.getHost())) return false;
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) { }
                 return true;
             }
 
@@ -136,17 +140,16 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
-            public boolean onShowFileChooser(WebView webView,
-                                             ValueCallback<Uri[]> filePathCallback,
-                                             FileChooserParams fileChooserParams) {
+            public boolean onShowFileChooser(WebView view,
+                                             ValueCallback<Uri[]> callback,
+                                             FileChooserParams params) {
                 if (fileChooserCallback != null) fileChooserCallback.onReceiveValue(null);
-                fileChooserCallback = filePathCallback;
+                fileChooserCallback = callback;
 
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType(resolveMime(fileChooserParams));
-                if (fileChooserParams != null &&
-                        fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                intent.setType(resolveMime(params));
+                if (params != null && params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
                     intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 }
                 try {
