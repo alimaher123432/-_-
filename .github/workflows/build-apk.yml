@@ -1,0 +1,73 @@
+name: Build Hasan School APK
+
+on:
+  push:
+    branches:
+      - hasan-school-apk-build
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract school logo from platform HTML
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re, base64, pathlib
+          html = pathlib.Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          m = re.search(r"const LOGO='data:image/jpeg;base64,([^']+)'", html)
+          if not m:
+              raise SystemExit("Embedded school logo was not found")
+          out = pathlib.Path("app/src/main/res/drawable")
+          out.mkdir(parents=True, exist_ok=True)
+          data = base64.b64decode(m.group(1))
+          (out / "school_logo.jpg").write_bytes(data)
+          print("logo bytes:", len(data))
+          PY
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/debug/app-debug.apk output/HasanSchool.apk
+          sha256sum output/HasanSchool.apk > output/HasanSchool.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HasanSchool-APK
+          path: |
+            output/HasanSchool.apk
+            output/HasanSchool.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
